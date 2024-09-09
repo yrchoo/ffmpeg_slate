@@ -20,9 +20,6 @@ import threading
 import progress_bar
 
 
-# mp4는 prores를 지원하지 않아요.. 
-# 둘다 지원하는 게 h264
-
 
 class SlateFFMPEG(QWidget):
 
@@ -112,6 +109,9 @@ class SlateFFMPEG(QWidget):
         self._ui_set_slate_label()
 
     def _ui_set_slate_combo_boxes(self):
+        """
+        UI의 comboBox 객체들을 저장하고 값을 설정해주는 메서드
+        """
         for key in self.slate_cb.keys():
             self.slate_cb[key] = getattr(self.ui, f"comboBox_{key}")
 
@@ -121,6 +121,9 @@ class SlateFFMPEG(QWidget):
             cb.currentTextChanged.connect(partial(self._change_label_text, key))
 
     def _change_label_text(self, key, val):
+        """
+        comboBox가 변경될 때마다 해당 값을 label에 띄우는 메서드
+        """
         if val == "--None--" : 
             text = ""
         else :
@@ -128,19 +131,31 @@ class SlateFFMPEG(QWidget):
         self.slate_label[key].setText(text)
 
     def _ui_set_slate_label(self):
+        """
+        UI의 label 객체들을 저장하고 값을 설정해주는 메서드
+        """
         for key in self.slate_label.keys():
             self.slate_label[key] = getattr(self.ui, f"label_{key}")
 
     def _ui_set_font_combo_box(self):
+        """
+        UI의 font 설정을 위한 comboBox 객체에 값을 설정해주는 메서드
+        """
         font_list = os.listdir(self.font_file_path)
         self.ui.comboBox_font.addItems(font_list)
 
     def _ui_set_ext_combo_box(self):
+        """
+        UI에서 output 파일의 확장자 설정을 위한 comboBox 객체에 값을 설정해주는 메서드
+        """
         ext_list = [".mov", ".mp4"]
         self.ui.comboBox_ext.addItems(ext_list)
         self.ui.comboBox_ext.currentTextChanged.connect(self._change_ext)
 
     def _change_ext(self, val):
+        """
+        comboBox의 값이 달라질 때마다 해당 값을 저장하는 메서드
+        """
         self.output_ext = val
 
     def _file_dialog(self) :
@@ -152,7 +167,6 @@ class SlateFFMPEG(QWidget):
                                                  self.basic_path, 
                                                  "")
 
-
         if file_path == '' :
             exit() 
 
@@ -161,7 +175,7 @@ class SlateFFMPEG(QWidget):
         self.show() 
 
     def _set_input_file_data(self, path):
-        # FileDialog에서 선택한 file의 path에서 원하는 부분을 나눠서 저장
+        # FileDialog에서 선택한 file의 path에서 필요한 정보를 추출하여 저장
         parse = re.compile("[/][s][h][o][w][/].*")
         p_data = parse.search(path).group()
         
@@ -186,6 +200,9 @@ class SlateFFMPEG(QWidget):
         self.input_ext = file_ext
 
     def _get_frame_range(self, ext, file_name):
+        """
+        Slate에 들어갈 프레임의 정보를 가져오는 메서드
+        """
         if ext in [".png", ".exr"] :
             files_name = self.input_file_path.split(".")[0]
             files_path = f"{files_name}.*{ext}"
@@ -203,6 +220,9 @@ class SlateFFMPEG(QWidget):
             self.last_frame = 1000 + length
 
     def _make_cmd(self):
+        """
+        shell에서 실행할 ffmpeg 명령어를 생성하는 메서드
+        """
         if self.input_ext in [".png", ".exr"] :
             ffmpeg_cmd = ' '.join(
                 [
@@ -231,6 +251,9 @@ class SlateFFMPEG(QWidget):
         self._run_cmd(cmd)
 
     def _cmd_padding(self):
+        """
+        slate 정보가 들어갈 box 부분을 생성하는 메서드
+        """
         padding_size = self.ui.horizontalSlider_padding.value() / 100
         upside_padding = "".join(
             [
@@ -250,6 +273,9 @@ class SlateFFMPEG(QWidget):
         return padding
 
     def _make_drawtext(self):
+        """
+        ffmpeg 명령어에서 drawtext문을 만들어주는 메서드
+        """
         font = f"{self.font_file_path}/{self.ui.comboBox_font.currentText()}"
         font_size = self.ui.horizontalSlider_padding_font_size.value()
         self._update_slate_location_data(font_size)
@@ -276,6 +302,9 @@ class SlateFFMPEG(QWidget):
         return drawtext_cmd[:-1]
 
     def _update_slate_location_data(self, font_size):
+        """
+        slate text 위치 이름에 따라 출력 위치 값을 보정해주는 메서드
+        """
         padding_size = self.ui.horizontalSlider_padding.value() / 100
         for key, val in self.slate_location.items():
                 if "top" in key : self.slate_location[key][1] = f"h*{padding_size/2}-{font_size/2}"
@@ -283,6 +312,9 @@ class SlateFFMPEG(QWidget):
         print(self.slate_location)
 
     def _run_cmd(self, cmd) : # subprocess
+        """
+        ffmpeg 명령어와 progress bar를 띄우는 ui를 스레드로 실행하는 메서드
+        """
         threads = []
 
         # Make Thread
@@ -296,12 +328,17 @@ class SlateFFMPEG(QWidget):
             t.start()
 
     def _progress_bar_dialog(self):
+        """
+        progress bar를 가지는 dialog를 선언하고 실행하는 메서드
+        """
         win_prog = progress_bar.ProgressBarDialog()
         self.RENDER_PROCESS_ING.connect(win_prog.change_prog_val)
         win_prog.exec()
 
     def _subprocess_cmd(self, cmd):
-        # Thread로 바꿔서 진행
+        """
+        ffmpeg cmd를 subprocess의 Popen으로 실행하는 메서드
+        """
         process = subprocess.Popen([cmd], 
                                stdout=subprocess.PIPE, 
                                stderr=subprocess.STDOUT,
@@ -314,7 +351,8 @@ class SlateFFMPEG(QWidget):
             parse = re.compile("[f][r][a][m][e][=][ ]*\d*")
             frame_val = int(parse.search(line).group().split(" ")[-1])
             percentage = int(frame_val * 100 / (self.last_frame - self.first_frame + 1))
-            self.RENDER_PROCESS_ING.emit(percentage)
+            self.RENDER_PROCESS_ING.emit(percentage) # 현재 ffmpeg에서 돌아가는 frame 값을 읽어와서 해당 값을 방출
+            # 이 값은 progress bar를 통해 보여진다
         
 
 if __name__ == "__main__":
