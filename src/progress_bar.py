@@ -2,7 +2,7 @@ import os
 
 from PySide6.QtWidgets import QApplication, QDialog
 
-from ui_slate_progress import Ui_Dialog
+from src.ui.ui_slate_progress import Ui_Dialog
 
 import time
 

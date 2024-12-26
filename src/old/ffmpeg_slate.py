@@ -5,7 +5,6 @@ import glob
 from datetime import datetime
 
 from PySide6.QtWidgets import QApplication, QWidget, QFileDialog
-from PySide6.QtWidgets import QMessageBox
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtCore import QFile, Signal
 
@@ -17,7 +16,7 @@ import subprocess
 
 import threading
 
-import progress_bar
+import src.progress_bar
 
 
 
@@ -38,7 +37,7 @@ class SlateFFMPEG(QWidget):
         """
         UI File을 Open하고 self.ui에 설정해주는 Method
         """
-        ui_file_path = "./slate_info.ui"
+        ui_file_path = "slate_info.ui"
         ui_file = QFile(ui_file_path)
         ui_file.open(QFile.ReadOnly)
         
@@ -307,8 +306,10 @@ class SlateFFMPEG(QWidget):
         """
         padding_size = self.ui.horizontalSlider_padding.value() / 100
         for key, val in self.slate_location.items():
-                if "top" in key : self.slate_location[key][1] = f"h*{padding_size/2}-{font_size/2}"
-                else : self.slate_location[key][1] = f"h*{1-padding_size/2}-{font_size/2}"
+                if "top" in key :
+                    self.slate_location[key][1] = f"h*{padding_size/2}-{font_size/2}"
+                else :
+                    self.slate_location[key][1] = f"h*{1-padding_size/2}-{font_size/2}"
         print(self.slate_location)
 
     def _run_cmd(self, cmd) : # subprocess
@@ -331,7 +332,7 @@ class SlateFFMPEG(QWidget):
         """
         progress bar를 가지는 dialog를 선언하고 실행하는 메서드
         """
-        win_prog = progress_bar.ProgressBarDialog()
+        win_prog = src.progress_bar.ProgressBarDialog()
         self.RENDER_PROCESS_ING.connect(win_prog.change_prog_val)
         win_prog.exec()
 
