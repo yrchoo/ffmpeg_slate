@@ -31,7 +31,7 @@ class FFMPEGData:
             "Shot": "",
             "Task": "",
             "Version": "",
-            "Timecode&Frame": "",
+            "Frame": "",
             "Date": "",
         }
 
@@ -79,7 +79,7 @@ class FFMPEGData:
         self.input_file_data["Shot"] = f"{file_split[0]}_{file_split[1]}"
         self.input_file_data["Task"] = file_split[2].upper()
         self.input_file_data["Version"] = file_split[3]
-        self.input_file_data["Timecode&Frame"] = "%{n}" + f"/{self.first_frame}-{self.last_frame}"
+        self.input_file_data["Frame"] = "%{n}" + f"/{self.first_frame}-{self.last_frame}"
         self.input_file_data["Date"] = datetime.today().strftime("%Y-%m-%d")
         self.input_ext = file_ext
 
