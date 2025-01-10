@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Dialog</string>
+   <string>FFMPEG Running...</string>
   </property>
   <layout class="QHBoxLayout" name="horizontalLayout">
    <item alignment="Qt::AlignHCenter">

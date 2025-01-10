@@ -5,9 +5,9 @@ import subprocess
 
 from functools import partial
 
-from PySide6.QtWidgets import QApplication, QWidget, QFileDialog
+from PySide6.QtWidgets import QApplication, QWidget, QFileDialog, QMessageBox
 from PySide6.QtUiTools import QUiLoader
-from PySide6.QtCore import QFile, Signal, Qt
+from PySide6.QtCore import QFile, Signal, Qt, QThread
 from PySide6.QtGui import QPixmap
 
 import ffmpeg_data
@@ -167,16 +167,15 @@ class SlateMaker(QWidget):
                     "ffmpeg"
                 ]
             )
-        cmd = ' '.join(
-            [
-                ffmpeg_cmd,
-                f"-i", f"{self.data.input_file_path}",
-                f"-vf", f'"{self.padding}{self.drawtext}"',
-                f"-c:v", "prores_ks",
-                f"{self.data.out_file_path}{self.data.output_ext}",
-                "-y"
-            ]
-        )
+        cmd = [
+
+            ffmpeg_cmd,
+            f"-i", f"{self.data.input_file_path}",
+            f"-vf", f"{self.padding}{self.drawtext}",
+            f"-c:v", "prores_ks",
+            f"{self.data.out_file_path}{self.data.output_ext}",
+            "-y"
+        ]
         print(cmd)
         self.run_thread(cmd)
 
@@ -238,7 +237,7 @@ class SlateMaker(QWidget):
         """Show progress bar dialog"""
         prog_dialog = progress_bar.ProgressBarDialog()
         self.RUNNING_RENDER_PROCESS.connect(prog_dialog.change_prog_val)
-        prog_dialog.exec()
+        prog_dialog.exec_()
 
 
     def _run_ffmpeg_subprocess(self, cmd):
@@ -248,7 +247,7 @@ class SlateMaker(QWidget):
         Args:
             cmd: ffmpeg command
         """
-        process = subprocess.Popen([cmd],
+        process = subprocess.Popen(cmd,
                                    stdout=subprocess.PIPE,
                                    stderr=subprocess.STDOUT,
                                    universal_newlines=True,
@@ -264,24 +263,47 @@ class SlateMaker(QWidget):
 
     def run_thread(self, cmd):
         """
-        Make ffmpeg subprocess and progress bar dialog run in different thread
+        Make ffmpeg subprocess and progress bar dialog run
 
         Args:
             cmd: ffmpeg command
         """
-        # TODO: There's some problem with run every function with thread in MacOS...
-        #       But still FFMPEG command works well :).......
+        ffmpeg_worker = FFMPEGWorker(cmd, self.data)
+        prog_dialog = progress_bar.ProgressBarDialog(ffmpeg_worker)
+        prog_dialog.exec()
 
-        threads = []
+        self.close()
 
-        progress = threading.Thread(target=self._progress_bar_dialog)
-        threads.append(progress)
 
-        sub = threading.Thread(target=partial(self._run_ffmpeg_subprocess, cmd))
-        threads.append(sub)
+class FFMPEGWorker(QThread):
+    """
+    Class that inherit QThread
+    """
 
-        for t in threads:
-            t.start()
+    RUNNING_RENDER_PROCESS = Signal(int)
+
+    def __init__(self, cmd, data):
+        super().__init__()
+        self.data = data
+        self.cmd = cmd
+
+    def run(self):
+        try:
+            process = subprocess.Popen(self.cmd,
+                                       stdout=subprocess.PIPE,
+                                       stderr=subprocess.STDOUT,
+                                       universal_newlines=True,
+                                       )
+
+            for line in process.stdout:
+                if not line.startswith("frame="):
+                    continue
+                parse = re.compile("[f][r][a][m][e][=][ ]*\\d*")
+                frame_val = int(parse.search(line).group().split(" ")[-1])
+                percentage = int(frame_val * 100 / (self.data.last_frame - self.data.first_frame + 1))
+                self.RUNNING_RENDER_PROCESS.emit(percentage)
+        except:
+            self.RUNNING_RENDER_PROCESS.emit(-1)
 
 
 if __name__ == "__main__":
